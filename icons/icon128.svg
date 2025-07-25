@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular background -->
+  <circle cx="64" cy="64" r="48" fill="white" stroke="#667eea" stroke-width="2"/>
+  
+  <!-- Microphone body -->
+  <rect x="54" y="32" width="21" height="42" 
+        rx="10" ry="10" fill="#667eea"/>
+  
+  <!-- Microphone stand -->
+  <rect x="57" y="74" width="14" height="21" fill="#667eea"/>
+  
+  <!-- Base -->
+  <rect x="43" y="95" width="42" height="6" 
+        rx="3" ry="3" fill="#667eea"/>
+</svg>

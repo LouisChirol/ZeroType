@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroType</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo">🎤 ZeroType</div>
+      <div class="version">v1.0</div>
+    </header>
+
+    <main class="popup-main">
+      <div class="status-section">
+        <div class="status-indicator" id="status-indicator">
+          <div class="status-dot"></div>
+          <span class="status-text" id="status-text">Ready</span>
+        </div>
+        
+        <div class="api-status" id="api-status">
+          <span class="api-text">API: Not configured</span>
+        </div>
+      </div>
+
+      <div class="controls-section">
+        <button class="record-btn" id="record-btn">
+          <span class="btn-icon">🎤</span>
+          <span class="btn-text">Start Recording</span>
+        </button>
+        
+        <div class="shortcut-hint">
+          Press <kbd>Ctrl+Space</kbd> to record
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="action-btn" id="settings-btn">
+          <span>⚙️</span>
+          Settings
+        </button>
+        
+        <button class="action-btn" id="help-btn">
+          <span>❓</span>
+          Help
+        </button>
+      </div>
+    </main>
+
+    <footer class="popup-footer">
+      <div class="usage-stats" id="usage-stats">
+        Transcriptions today: <span id="usage-count">0</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

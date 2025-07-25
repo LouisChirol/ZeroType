@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroType Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎤 ZeroType Settings</h1>
+      <p>Configure your speech-to-text preferences</p>
+    </header>
+
+    <main>
+      <section class="section">
+        <h2>API Configuration</h2>
+        <div class="form-group">
+          <label for="api-key">Mistral API Key</label>
+          <input type="password" id="api-key" placeholder="Enter your Mistral API key">
+          <div class="help-text">
+            Get your API key from <a href="https://console.mistral.ai/" target="_blank">Mistral Console</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Usage Instructions</h2>
+        <div class="instructions">
+          <div class="instruction-item">
+            <div class="step">1</div>
+            <div class="content">
+              <strong>Focus on any text field</strong>
+              <p>Click on any input field, textarea, or editable content where you want to insert text.</p>
+            </div>
+          </div>
+          
+          <div class="instruction-item">
+            <div class="step">2</div>
+            <div class="content">
+              <strong>Start recording</strong>
+              <p>Press <kbd>Ctrl+Space</kbd> (or <kbd>Cmd+Space</kbd> on Mac) to start recording your voice.</p>
+            </div>
+          </div>
+          
+          <div class="instruction-item">
+            <div class="step">3</div>
+            <div class="content">
+              <strong>Speak clearly</strong>
+              <p>Speak your text clearly. The recording overlay will show while you're recording.</p>
+            </div>
+          </div>
+          
+          <div class="instruction-item">
+            <div class="step">4</div>
+            <div class="content">
+              <strong>Stop and transcribe</strong>
+              <p>Press the shortcut again or click "Stop Recording" to transcribe and insert the text.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Keyboard Shortcuts</h2>
+        <div class="shortcuts">
+          <div class="shortcut">
+            <kbd>Ctrl+Space</kbd>
+            <span>Start/Stop recording (Windows/Linux)</span>
+          </div>
+          <div class="shortcut">
+            <kbd>Cmd+Space</kbd>
+            <span>Start/Stop recording (Mac)</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <button id="save-btn" class="btn-primary">Save Settings</button>
+      <button id="test-btn" class="btn-secondary">Test API Key</button>
+      <div id="status" class="status"></div>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html> 

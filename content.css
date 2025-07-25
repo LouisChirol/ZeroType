@@ -1,0 +1,126 @@
+/* ZeroType Content Script Styles */
+
+#zerotype-recording-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.zerotype-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+  min-width: 300px;
+  animation: zerotype-slideIn 0.3s ease-out;
+}
+
+@keyframes zerotype-slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.zerotype-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: zerotype-pulse 1.5s infinite;
+}
+
+@keyframes zerotype-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.zerotype-status {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a73e8;
+  margin-bottom: 8px;
+}
+
+.zerotype-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.zerotype-stop-btn {
+  background: #ea4335;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.zerotype-stop-btn:hover {
+  background: #d33b2c;
+}
+
+/* Notifications */
+.zerotype-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: zerotype-slideInRight 0.3s ease-out;
+}
+
+@keyframes zerotype-slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.zerotype-notification.zerotype-success {
+  background: #4caf50;
+  color: white;
+}
+
+.zerotype-notification.zerotype-error {
+  background: #f44336;
+  color: white;
+}
+
+.zerotype-notification.zerotype-warning {
+  background: #ff9800;
+  color: white;
+}
+
+.zerotype-notification.zerotype-info {
+  background: #2196f3;
+  color: white;
+} 

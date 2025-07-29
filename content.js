@@ -7,6 +7,7 @@ class ZeroTypeContent {
     this.recordingOverlay = null;
     this.focusedElement = null;
     this.targetElement = null;
+    this.lastFocusedInput = null; // Remember last text input even when focus is lost
     this.customShortcut = 'Ctrl+Space'; // Default shortcut
     
     this.setupMessageListener();
@@ -35,10 +36,12 @@ class ZeroTypeContent {
       const element = event.target;
       if (this.isTextInput(element)) {
         this.focusedElement = element;
+        this.lastFocusedInput = element; // Always remember the last text input
       }
     });
 
     document.addEventListener('focusout', () => {
+      // Don't clear lastFocusedInput - keep it for popup button usage
       this.focusedElement = null;
     });
   }
@@ -108,14 +111,25 @@ class ZeroTypeContent {
 
   async startRecording() {
     try {
-      // Check if there's a focused text input
-      if (!this.focusedElement) {
+      // Find the best available text input using multiple strategies
+      const targetInput = this.findBestTargetInput();
+      
+      if (!targetInput) {
         this.showNotification('Please focus on a text input field first', 'warning');
         return;
       }
 
-      // Store the focused element reference more robustly
-      this.targetElement = this.focusedElement;
+      // Store the target element reference
+      this.targetElement = targetInput;
+      this.focusedElement = targetInput; // Update current focus tracking
+      
+      // Provide feedback if we're using a remembered input (for popup button usage)
+      if (targetInput === this.lastFocusedInput && targetInput !== document.activeElement) {
+        // Briefly show that we found the remembered input
+        setTimeout(() => {
+          this.showNotification('Using remembered input field', 'info');
+        }, 100);
+      }
 
       // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -332,8 +346,8 @@ class ZeroTypeContent {
   }
 
   insertText(text) {
-    // Use targetElement (stored during recording start) as fallback if focusedElement is lost
-    const element = this.focusedElement || this.targetElement;
+    // Find the best target using our smart detection
+    const element = this.findBestTargetInput() || this.targetElement;
 
     if (!element) {
       this.showNotification('No text field available. Please click on a text input and try again.', 'warning');
@@ -350,9 +364,10 @@ class ZeroTypeContent {
       const success = this.tryInsertText(element, text);
       
       if (success) {
-        // Update focus tracking on successful insertion
+        // Update focus tracking on successful insertion and ensure element is focused
         element.focus();
         this.focusedElement = element;
+        this.lastFocusedInput = element; // Update last focused for future use
       } else {
         // Fallback: try to find alternative input elements
         const alternativeElement = this.findAlternativeInput(element);
@@ -568,6 +583,90 @@ class ZeroTypeContent {
         console.log('Could not perform focus cycling');
       }
     }, 5);
+  }
+
+  findBestTargetInput() {
+    // Strategy 1: Currently focused element (highest priority)
+    if (this.focusedElement && this.isTextInput(this.focusedElement)) {
+      return this.focusedElement;
+    }
+    
+    // Strategy 2: Last focused input (for popup button usage)
+    if (this.lastFocusedInput && this.isTextInput(this.lastFocusedInput)) {
+      // Verify the element is still in DOM and visible
+      if (document.contains(this.lastFocusedInput) && this.isElementVisible(this.lastFocusedInput)) {
+        return this.lastFocusedInput;
+      }
+    }
+    
+    // Strategy 3: Find currently active/focused element even if we missed it
+    const activeElement = document.activeElement;
+    if (activeElement && this.isTextInput(activeElement)) {
+      return activeElement;
+    }
+    
+    // Strategy 4: Smart detection - find likely target inputs
+    const smartTarget = this.findSmartTargetInput();
+    if (smartTarget) {
+      return smartTarget;
+    }
+    
+    return null;
+  }
+
+  findSmartTargetInput() {
+    // Look for inputs that are likely targets (visible, not disabled, etc.)
+    const selectors = [
+      'input[type="text"]:not([disabled]):not([readonly])',
+      'textarea:not([disabled]):not([readonly])', 
+      '[contenteditable="true"]:not([disabled])',
+      '[role="textbox"]:not([disabled])',
+      'input[type="search"]:not([disabled]):not([readonly])',
+      'input[type="email"]:not([disabled]):not([readonly])'
+    ];
+    
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      for (const element of elements) {
+        if (this.isElementVisible(element) && this.isLikelyTargetInput(element)) {
+          return element;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  isElementVisible(element) {
+    if (!element || !document.contains(element)) return false;
+    
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    
+    return (
+      rect.width > 0 && 
+      rect.height > 0 && 
+      style.display !== 'none' && 
+      style.visibility !== 'hidden' &&
+      style.opacity !== '0'
+    );
+  }
+
+  isLikelyTargetInput(element) {
+    // Prioritize inputs that are likely to be message/content fields
+    const rect = element.getBoundingClientRect();
+    
+    // Prefer larger inputs (more likely to be content fields)
+    const isReasonableSize = rect.width > 100 && rect.height > 20;
+    
+    // Check for common patterns in classes/ids that suggest message/content inputs
+    const text = (element.className + ' ' + element.id + ' ' + (element.placeholder || '')).toLowerCase();
+    const isContentField = /message|comment|post|note|text|content|compose|write|input|search/i.test(text);
+    
+    // Prefer inputs that are in the center area of the viewport
+    const isInGoodPosition = rect.top > 50 && rect.bottom < window.innerHeight - 50;
+    
+    return isReasonableSize && (isContentField || isInGoodPosition);
   }
 
   findAlternativeInput(originalElement) {

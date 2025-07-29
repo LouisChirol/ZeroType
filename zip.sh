@@ -1,0 +1,1 @@
+zip -r zerotype-extension.zip . -x "*.git*" "*.md" "*.py" "README*" "INSTALLATION*" "*chrome*" "*store*" "*.zip" "zip.sh"

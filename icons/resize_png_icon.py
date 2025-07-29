@@ -24,7 +24,7 @@ def resize_image(input_file, output_file, size):
         return False
 
 def main():
-    input_file = 'png_icon_v2.png'
+    input_file = 'icon.png'
     
     # Check if input file exists
     if not os.path.exists(input_file):
@@ -48,7 +48,5 @@ def main():
     else:
         print(f"\nWarning: Only {success_count}/{len(sizes)} icons were created successfully.")
 
-if __name__ == "__main__":
-    main()
 if __name__ == "__main__":
     main()

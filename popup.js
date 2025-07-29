@@ -8,6 +8,9 @@ class ZeroTypePopup {
     this.recordBtn = document.getElementById('record-btn');
     this.settingsBtn = document.getElementById('settings-btn');
     this.helpBtn = document.getElementById('help-btn');
+    this.coffeeBtn = document.getElementById('coffee-btn');
+    this.privacyNotice = document.getElementById('privacy-notice');
+    this.shortcutDisplay = document.getElementById('shortcut-display');
     this.usageCount = document.getElementById('usage-count');
     
     this.setupEventListeners();
@@ -19,12 +22,18 @@ class ZeroTypePopup {
     this.recordBtn.addEventListener('click', () => this.toggleRecording());
     this.settingsBtn.addEventListener('click', () => this.openSettings());
     this.helpBtn.addEventListener('click', () => this.showHelp());
+    this.coffeeBtn.addEventListener('click', () => this.openTipJar());
+    this.privacyNotice.addEventListener('click', () => this.openPrivacyDisclaimer());
   }
 
   async updateStatus() {
     try {
-      // Check API key configuration
-      const { mistralApiKey } = await chrome.storage.sync.get(['mistralApiKey']);
+      // Check API key configuration and load shortcut
+      const { mistralApiKey, customShortcut } = await chrome.storage.sync.get(['mistralApiKey', 'customShortcut']);
+      
+      // Update shortcut display
+      const currentShortcut = customShortcut || 'Ctrl+Space';
+      this.shortcutDisplay.textContent = currentShortcut;
       
       if (mistralApiKey) {
         this.apiStatus.innerHTML = '<span class="api-text api-configured">API: Configured ✅</span>';
@@ -86,18 +95,31 @@ class ZeroTypePopup {
     chrome.runtime.openOptionsPage();
   }
 
-  showHelp() {
+  async showHelp() {
+    // Get the current shortcut
+    const { customShortcut } = await chrome.storage.sync.get(['customShortcut']);
+    const currentShortcut = customShortcut || 'Ctrl+Space';
+    
     const helpText = `ZeroType - Speech to Text Extension
 
 How to use:
 1. Focus on any text input field
-2. Press Ctrl+Space (Cmd+Space on Mac)
+2. Press ${currentShortcut}
 3. Speak clearly
 4. Press the shortcut again to stop and transcribe
 
 Make sure to configure your Mistral API key in Settings first!`;
     
     alert(helpText);
+  }
+
+  openTipJar() {
+    chrome.tabs.create({ url: 'https://coff.ee/zerotype' });
+  }
+
+  openPrivacyDisclaimer() {
+    // Open options page with anchor to scroll directly to privacy disclaimer
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html#privacy-disclaimer') });
   }
 
   async loadUsageStats() {

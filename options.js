@@ -5,6 +5,11 @@ class ZeroTypeOptions {
     this.apiKeyInput = document.getElementById('api-key');
     this.saveBtn = document.getElementById('save-btn');
     this.testBtn = document.getElementById('test-btn');
+    this.coffeeBtn = document.getElementById('coffee-btn');
+    this.customShortcutInput = document.getElementById('custom-shortcut');
+    this.resetShortcutBtn = document.getElementById('reset-shortcut');
+    this.chromeShortcutsLink = document.getElementById('chrome-shortcuts-link');
+    this.shortcutStatus = document.getElementById('shortcut-status');
     this.status = document.getElementById('status');
     
     this.setupEventListeners();
@@ -14,6 +19,17 @@ class ZeroTypeOptions {
   setupEventListeners() {
     this.saveBtn.addEventListener('click', () => this.saveSettings());
     this.testBtn.addEventListener('click', () => this.testApiKey());
+    this.coffeeBtn.addEventListener('click', () => this.openTipJar());
+    this.resetShortcutBtn.addEventListener('click', () => this.resetShortcut());
+    this.chromeShortcutsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.openChromeShortcuts();
+    });
+    
+    // Shortcut input handling
+    this.customShortcutInput.addEventListener('click', () => this.startShortcutCapture());
+    this.customShortcutInput.addEventListener('keydown', (e) => this.handleShortcutKeydown(e));
+    this.customShortcutInput.addEventListener('blur', () => this.endShortcutCapture());
     
     // Save on Enter key
     this.apiKeyInput.addEventListener('keypress', (e) => {
@@ -25,10 +41,15 @@ class ZeroTypeOptions {
 
   async loadSettings() {
     try {
-      const result = await chrome.storage.sync.get(['mistralApiKey']);
+      const result = await chrome.storage.sync.get(['mistralApiKey', 'customShortcut']);
       if (result.mistralApiKey) {
         this.apiKeyInput.value = result.mistralApiKey;
       }
+      
+      // Load custom shortcut or default
+      const shortcut = result.customShortcut || 'Ctrl+Space';
+      this.customShortcutInput.value = shortcut;
+      this.customShortcutInput.placeholder = shortcut;
     } catch (error) {
       this.showStatus('Error loading settings', 'error');
     }
@@ -36,6 +57,7 @@ class ZeroTypeOptions {
 
   async saveSettings() {
     const apiKey = this.apiKeyInput.value.trim();
+    const customShortcut = this.customShortcutInput.value.trim();
     
     if (!apiKey) {
       this.showStatus('Please enter an API key', 'error');
@@ -48,8 +70,16 @@ class ZeroTypeOptions {
     }
 
     try {
-      await chrome.storage.sync.set({ mistralApiKey: apiKey });
+      const settingsToSave = { mistralApiKey: apiKey };
+      if (customShortcut) {
+        settingsToSave.customShortcut = customShortcut;
+      }
+      
+      await chrome.storage.sync.set(settingsToSave);
       this.showStatus('Settings saved successfully!', 'success');
+      
+      // Notify content scripts about shortcut change
+      this.notifyShortcutChange(customShortcut);
     } catch (error) {
       this.showStatus('Error saving settings', 'error');
     }
@@ -154,6 +184,104 @@ class ZeroTypeOptions {
     return arrayBuffer;
   }
 
+  openTipJar() {
+    chrome.tabs.create({ url: 'https://coff.ee/zerotype' });
+  }
+
+  // Shortcut configuration methods
+  startShortcutCapture() {
+    this.customShortcutInput.placeholder = 'Press keys...';
+    this.customShortcutInput.style.background = '#fff';
+    this.shortcutStatus.textContent = '';
+    this.shortcutStatus.className = 'shortcut-status';
+  }
+
+  endShortcutCapture() {
+    if (!this.customShortcutInput.value) {
+      this.customShortcutInput.placeholder = 'Ctrl+Space';
+      this.customShortcutInput.style.background = '#f8f9fa';
+    }
+  }
+
+  handleShortcutKeydown(e) {
+    e.preventDefault();
+    
+    // Ignore lone modifier keys
+    if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+      return;
+    }
+    
+    const keys = [];
+    if (e.ctrlKey) keys.push('Ctrl');
+    if (e.altKey) keys.push('Alt');
+    if (e.shiftKey) keys.push('Shift');
+    if (e.metaKey) keys.push('Cmd');
+    
+    // Handle special keys
+    let mainKey = e.key;
+    if (e.key === ' ') mainKey = 'Space';
+    else if (e.key.length === 1) mainKey = e.key.toUpperCase();
+    
+    keys.push(mainKey);
+    const shortcutString = keys.join('+');
+    
+    // Validate shortcut
+    if (this.validateShortcut(shortcutString)) {
+      this.customShortcutInput.value = shortcutString;
+      this.showShortcutStatus('Shortcut set! Remember to save settings.', 'success');
+    } else {
+      this.showShortcutStatus('Invalid shortcut combination', 'error');
+    }
+  }
+
+  validateShortcut(shortcut) {
+    // Require at least one modifier key or function key
+    const hasModifier = shortcut.includes('Ctrl') || shortcut.includes('Alt') || 
+                       shortcut.includes('Shift') || shortcut.includes('Cmd');
+    const isFunctionKey = /F\d+/.test(shortcut);
+    
+    // Don't allow dangerous combinations
+    const dangerous = ['Ctrl+W', 'Ctrl+T', 'Ctrl+N', 'Alt+F4', 'Cmd+W', 'Cmd+T'];
+    
+    return (hasModifier || isFunctionKey) && !dangerous.includes(shortcut);
+  }
+
+  async resetShortcut() {
+    this.customShortcutInput.value = 'Ctrl+Space';
+    this.showShortcutStatus('Reset to default. Remember to save settings.', 'success');
+  }
+
+  openChromeShortcuts() {
+    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+  }
+
+  showShortcutStatus(message, type) {
+    this.shortcutStatus.textContent = message;
+    this.shortcutStatus.className = `shortcut-status ${type}`;
+    
+    setTimeout(() => {
+      this.shortcutStatus.textContent = '';
+      this.shortcutStatus.className = 'shortcut-status';
+    }, 3000);
+  }
+
+  async notifyShortcutChange(shortcut) {
+    // Notify all tabs about the shortcut change
+    try {
+      const tabs = await chrome.tabs.query({});
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'updateShortcut',
+          shortcut: shortcut
+        }).catch(() => {
+          // Ignore errors for tabs that don't have content script
+        });
+      });
+    } catch (error) {
+      console.log('Could not notify tabs about shortcut change:', error);
+    }
+  }
+
   showStatus(message, type = 'info') {
     this.status.textContent = message;
     this.status.className = `status status-${type}`;
@@ -171,4 +299,19 @@ class ZeroTypeOptions {
 // Initialize options page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   new ZeroTypeOptions();
+  
+  // Handle privacy disclaimer anchor scrolling
+  if (window.location.hash === '#privacy-disclaimer') {
+    setTimeout(() => {
+      const element = document.getElementById('privacy-disclaimer');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Add a subtle highlight effect
+        element.style.backgroundColor = '#fff8e1';
+        setTimeout(() => {
+          element.style.backgroundColor = '';
+        }, 2000);
+      }
+    }, 100);
+  }
 }); 

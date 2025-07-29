@@ -1,24 +1,5 @@
 # 🚀 Quick Installation Guide
 
-## Icon Files
-The extension is complete but needs PNG icons to work properly. I've created SVG versions that need to be converted:
-
-### Option 1: Convert SVG to PNG (Recommended)
-1. Use an online converter like [CloudConvert](https://cloudconvert.com/svg-to-png) or [Convertio](https://convertio.co/svg-png/)
-2. Upload `icons/icon16.svg`, `icons/icon48.svg`, and `icons/icon128.svg`
-3. Download as `icon16.png`, `icon48.png`, and `icon128.png`
-4. Place them in the `icons/` folder
-
-### Option 2: Install Pillow and Generate PNG
-```bash
-# If you have pip/pip3 available:
-pip install Pillow
-# or
-pip3 install Pillow
-
-# Then run:
-python3 icons/create_icons.py
-```
 
 ## Loading the Extension
 1. Open Chrome and go to `chrome://extensions/`
@@ -29,8 +10,42 @@ python3 icons/create_icons.py
 
 ## Ready to Use!
 - Focus on any text input field
-- Press `Ctrl+Space` (Windows/Linux) or `Cmd+Space` (Mac)
+- Press `Ctrl+Space` (default shortcut for all platforms)
 - Speak clearly
 - Press the shortcut again to stop and transcribe
 
-Enjoy hands-free typing! 🎤✨ 
+### ⌨️ **Want a Different Shortcut?**
+1. Click the ZeroType extension icon → "Settings"
+2. Scroll to "Keyboard Shortcuts" section
+3. Click the input field and press your preferred keys (e.g., `Alt+R`, `F2`)
+4. Click "Save Settings"
+5. Your new shortcut works instantly!
+
+## 🚀 Enhanced Modern App Support
+
+ZeroType now works seamlessly with popular messaging and productivity applications:
+
+### ✅ **Messaging Apps**
+- **WhatsApp Web**: Click in message compose area, then use `Ctrl+Space`
+- **Facebook Messenger**: Works with both text and emoji reactions
+- **Discord**: Perfect for channels, DMs, and server conversations  
+- **Slack**: Compatible with all workspace channels and threads
+- **Telegram Web**: Full message composition support
+
+### ✅ **Productivity Tools** 
+- **Gmail**: Compose emails, replies, and drafts
+- **Google Docs**: Insert text anywhere in documents
+- **Google Translate**: Speak in a language and get the text transcription
+- **Notion**: Works with all text blocks and databases
+- **LinkedIn**: Posts, comments, and messages
+- **Twitter**: Tweets, replies, and DMs
+
+### 💡 **Pro Tips**
+- **Always focus first**: Click directly in the input area before recording
+- **Customize your shortcut**: Set `Alt+R`, `F2`, or any comfortable key combination
+- **Smart switching**: Only one shortcut active at a time - no conflicts with other extensions
+- **No more duplicates**: Fixed double-pasting issues in messaging apps
+- **Smart detection**: Automatically finds the right input field even in complex layouts
+- **Framework compatible**: Works with React, Vue, Angular, and other modern frameworks
+
+Enjoy hands-free typing across all your favorite apps! 🎤✨ 

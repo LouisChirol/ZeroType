@@ -7,16 +7,24 @@ class ZeroTypeContent {
     this.recordingOverlay = null;
     this.focusedElement = null;
     this.targetElement = null;
+    this.customShortcut = 'Ctrl+Space'; // Default shortcut
     
     this.setupMessageListener();
     this.trackFocusedElement();
-    this.createRecordingOverlay();
+    this.setupCustomShortcuts();
+    this.loadCustomShortcut().then(() => {
+      // Create overlay after shortcut is loaded so it shows correctly
+      this.createRecordingOverlay();
+    });
   }
 
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'toggleRecording') {
         this.toggleRecording();
+      } else if (request.action === 'updateShortcut') {
+        this.customShortcut = request.shortcut || 'Ctrl+Space';
+        this.updateOverlayShortcut();
       }
     });
   }
@@ -64,14 +72,14 @@ class ZeroTypeContent {
     return false;
   }
 
-  createRecordingOverlay() {
+    createRecordingOverlay() {
     this.recordingOverlay = document.createElement('div');
     this.recordingOverlay.id = 'zerotype-recording-overlay';
     this.recordingOverlay.innerHTML = `
       <div class="zerotype-modal">
         <div class="zerotype-icon">🎤</div>
         <div class="zerotype-status">Recording...</div>
-        <div class="zerotype-subtitle">Speak now, press Ctrl+Space to stop</div>
+        <div class="zerotype-subtitle">Speak now, press <span id="overlay-shortcut">${this.customShortcut}</span> to stop</div>
         <button class="zerotype-stop-btn">Stop Recording</button>
       </div>
     `;
@@ -79,8 +87,15 @@ class ZeroTypeContent {
     this.recordingOverlay.querySelector('.zerotype-stop-btn').addEventListener('click', () => {
       this.stopRecording();
     });
-    
+
     document.body.appendChild(this.recordingOverlay);
+  }
+
+  updateOverlayShortcut() {
+    const overlayShortcut = document.getElementById('overlay-shortcut');
+    if (overlayShortcut) {
+      overlayShortcut.textContent = this.customShortcut;
+    }
   }
 
   async toggleRecording() {
@@ -609,6 +624,49 @@ class ZeroTypeContent {
         notification.remove();
       }
     }, 3000);
+  }
+
+  // Custom shortcut handling
+  setupCustomShortcuts() {
+    document.addEventListener('keydown', (e) => this.handleKeydown(e));
+  }
+
+  async loadCustomShortcut() {
+    try {
+      const result = await chrome.storage.sync.get(['customShortcut']);
+      if (result.customShortcut) {
+        this.customShortcut = result.customShortcut;
+      }
+    } catch (error) {
+      console.log('Could not load custom shortcut:', error);
+    }
+  }
+
+  handleKeydown(e) {
+    // Don't trigger in input fields unless they're our target
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if (!this.isTextInput(e.target)) return;
+    }
+
+    // Build the current key combination
+    const keys = [];
+    if (e.ctrlKey) keys.push('Ctrl');
+    if (e.altKey) keys.push('Alt');
+    if (e.shiftKey) keys.push('Shift');
+    if (e.metaKey) keys.push('Cmd');
+    
+    let mainKey = e.key;
+    if (e.key === ' ') mainKey = 'Space';
+    else if (e.key.length === 1) mainKey = e.key.toUpperCase();
+    
+    keys.push(mainKey);
+    const currentShortcut = keys.join('+');
+    
+    // Check if it matches our custom shortcut
+    if (currentShortcut === this.customShortcut) {
+      e.preventDefault();
+      this.toggleRecording();
+    }
   }
 }
 

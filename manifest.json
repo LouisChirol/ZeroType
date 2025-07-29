@@ -31,7 +31,7 @@
     "start-recording": {
       "suggested_key": {
         "default": "Ctrl+Space",
-        "mac": "Command+Space"
+        "mac": "Ctrl+Space"
       },
       "description": "Start/stop speech recording"
     }

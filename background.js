@@ -6,8 +6,18 @@ class ZeroTypeBackground {
   }
 
   setupCommandListener() {
-    chrome.commands.onCommand.addListener((command) => {
+    chrome.commands.onCommand.addListener(async (command) => {
       if (command === 'start-recording') {
+        // Check if user has set a custom shortcut different from default
+        const { customShortcut } = await chrome.storage.sync.get(['customShortcut']);
+        
+        // If custom shortcut exists and is different from default, ignore Chrome's native shortcut
+        if (customShortcut && customShortcut !== 'Ctrl+Space') {
+          // Custom shortcut is active, ignore the native Chrome shortcut
+          return;
+        }
+        
+        // Only proceed if using default shortcut or no custom shortcut set
         this.toggleRecording();
       }
     });

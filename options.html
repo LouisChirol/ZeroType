@@ -40,7 +40,7 @@
             <div class="step">2</div>
             <div class="content">
               <strong>Start recording</strong>
-              <p>Press <kbd>Ctrl+Space</kbd> (or <kbd>Cmd+Space</kbd> on Mac) to start recording your voice.</p>
+              <p>Press <kbd>Ctrl+Space</kbd> on any platform to start recording your voice.</p>
             </div>
           </div>
           
@@ -64,22 +64,52 @@
 
       <section class="section">
         <h2>Keyboard Shortcuts</h2>
-        <div class="shortcuts">
-          <div class="shortcut">
-            <kbd>Ctrl+Space</kbd>
-            <span>Start/Stop recording (Windows/Linux)</span>
+        <div class="shortcut-config">
+          <div class="form-group">
+            <label for="custom-shortcut">Recording Shortcut</label>
+            <div class="shortcut-input-container">
+              <input type="text" id="custom-shortcut" placeholder="Press keys to set shortcut" readonly>
+              <button type="button" id="reset-shortcut" class="btn-reset" title="Reset to default">🔄</button>
+            </div>
+            <div class="help-text">
+              Click the field and press your desired key combination (e.g., Ctrl+Space, Alt+R, F2)
+            </div>
           </div>
-          <div class="shortcut">
-            <kbd>Cmd+Space</kbd>
-            <span>Start/Stop recording (Mac)</span>
-          </div>
+          <div class="shortcut-status" id="shortcut-status"></div>
+        </div>
+        
+        <div class="chrome-shortcuts-link">
+          <p><strong>Alternative:</strong> You can also change shortcuts in 
+          <a href="#" id="chrome-shortcuts-link">Chrome's Extension Shortcuts</a></p>
+        </div>
+      </section>
+      
+      <section class="section privacy-warning" id="privacy-disclaimer">
+        <h2>⚠️ Privacy & Data Warning</h2>
+        <div class="warning-content">
+          <p><strong>Important:</strong> ZeroType uses external AI services (Mistral AI) for transcription.</p>
+          <ul>
+            <li>🚫 <strong>Avoid personal data:</strong> Don't dictate passwords, SSNs, private info</li>
+            <li>🌐 <strong>External processing:</strong> Audio is sent to Mistral AI servers</li>
+            <li>📋 <strong>Review terms:</strong> Check <a href="https://mistral.ai/terms/" target="_blank">Mistral's Terms</a> and <a href="https://mistral.ai/privacy/" target="_blank">Privacy Policy</a></li>
+          </ul>
+          <p class="disclaimer"><strong>We disclaim responsibility for any data shared through this service.</strong></p>
         </div>
       </section>
     </main>
 
     <footer>
-      <button id="save-btn" class="btn-primary">Save Settings</button>
-      <button id="test-btn" class="btn-secondary">Test API Key</button>
+      <div class="footer-actions">
+        <div class="main-actions">
+          <button id="save-btn" class="btn-primary">Save Settings</button>
+          <button id="test-btn" class="btn-secondary">Test API Key</button>
+        </div>
+        <div class="support-actions">
+          <button id="coffee-btn" class="btn-coffee" title="Support ZeroType development">
+            ☕ Buy us a coffee
+          </button>
+        </div>
+      </div>
       <div id="status" class="status"></div>
     </footer>
   </div>

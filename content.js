@@ -39,11 +39,29 @@ class ZeroTypeContent {
     const tagName = element.tagName.toLowerCase();
     const inputTypes = ['text', 'email', 'password', 'search', 'tel', 'url'];
     
-    return (
-      tagName === 'textarea' ||
-      tagName === 'input' && inputTypes.includes(element.type) ||
-      element.contentEditable === 'true'
-    );
+    // Standard input detection
+    if (tagName === 'textarea' || 
+        (tagName === 'input' && inputTypes.includes(element.type)) ||
+        element.contentEditable === 'true' || 
+        element.isContentEditable) {
+      return true;
+    }
+    
+    // Modern web app patterns
+    if (element.getAttribute('role') === 'textbox' ||
+        element.getAttribute('aria-multiline') === 'true' ||
+        element.classList.contains('input') ||
+        element.hasAttribute('data-testid') && element.getAttribute('data-testid').includes('input') ||
+        element.hasAttribute('data-testid') && element.getAttribute('data-testid').includes('text')) {
+      return true;
+    }
+    
+    // Check for nested input elements (common in component frameworks)
+    if (element.querySelector('input, textarea, [contenteditable="true"], [role="textbox"]')) {
+      return true;
+    }
+    
+    return false;
   }
 
   createRecordingOverlay() {
@@ -313,39 +331,255 @@ class ZeroTypeContent {
     }
     
     try {
-      if (element.contentEditable === 'true') {
-        // Handle contentEditable elements
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(text));
-          range.collapse(false);
-        } else {
-          element.textContent += text;
-        }
-      } else {
-        // Handle input and textarea elements
-        const start = element.selectionStart || 0;
-        const end = element.selectionEnd || 0;
-        const currentValue = element.value || '';
-        
-        element.value = currentValue.substring(0, start) + text + currentValue.substring(end);
-        element.selectionStart = element.selectionEnd = start + text.length;
-        
-        // Trigger input event for frameworks like React
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      // Enhanced text insertion with multiple strategies
+      const success = this.tryInsertText(element, text);
       
-      // Focus back on the element and update our tracking
-      element.focus();
-      this.focusedElement = element; // Update the focus tracking
+      if (success) {
+        // Update focus tracking on successful insertion
+        element.focus();
+        this.focusedElement = element;
+      } else {
+        // Fallback: try to find alternative input elements
+        const alternativeElement = this.findAlternativeInput(element);
+        if (alternativeElement) {
+          const fallbackSuccess = this.tryInsertText(alternativeElement, text);
+          if (fallbackSuccess) {
+            alternativeElement.focus();
+            this.focusedElement = alternativeElement;
+          }
+        } else {
+          this.showNotification('Could not insert text - complex input field detected', 'warning');
+        }
+      }
       
     } catch (error) {
       console.error('Error during text insertion:', error);
       this.showNotification('Error inserting text into field', 'error');
     }
+  }
+
+  tryInsertText(element, text) {
+    try {
+      // Strategy 1: Handle contentEditable elements (WhatsApp, Messenger, etc.)
+      if (element.contentEditable === 'true' || element.isContentEditable) {
+        return this.insertIntoContentEditable(element, text);
+      }
+      
+      // Strategy 2: Handle regular input/textarea elements
+      if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
+        return this.insertIntoInputElement(element, text);
+      }
+      
+      // Strategy 3: Look for nested input elements (some apps wrap inputs)
+      const nestedInput = element.querySelector('input, textarea, [contenteditable="true"]');
+      if (nestedInput) {
+        return this.tryInsertText(nestedInput, text);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Text insertion strategy failed:', error);
+      return false;
+    }
+  }
+
+  insertIntoContentEditable(element, text) {
+    // Focus the element first
+    element.focus();
+    
+    // Strategy A: Use document.execCommand (deprecated but still works in many cases)
+    if (document.execCommand) {
+      try {
+        const success = document.execCommand('insertText', false, text);
+        if (success) {
+          // Only dispatch minimal events for execCommand since it handles most of the work
+          this.dispatchMinimalEvents(element);
+          return true;
+        }
+      } catch (e) {
+        console.log('execCommand failed, trying alternative methods');
+      }
+    }
+    
+    // Strategy B: Manual selection and range manipulation
+    try {
+      const selection = window.getSelection();
+      let range;
+      
+      if (selection.rangeCount > 0) {
+        range = selection.getRangeAt(0);
+      } else {
+        range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      
+      // Insert text
+      range.deleteContents();
+      const textNode = document.createTextNode(text);
+      range.insertNode(textNode);
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Dispatch events for manual insertion
+      this.dispatchInputEvents(element);
+      return true;
+      
+    } catch (e) {
+      console.error('Range manipulation failed:', e);
+    }
+    
+    // Strategy C: Direct content manipulation (last resort)
+    try {
+      const currentContent = element.innerHTML || element.textContent || '';
+      element.innerHTML = currentContent + text;
+      this.dispatchInputEvents(element);
+      return true;
+    } catch (e) {
+      console.error('Direct content manipulation failed:', e);
+    }
+    
+    return false;
+  }
+
+  insertIntoInputElement(element, text) {
+    // Focus the element
+    element.focus();
+    
+    // Store current state
+    const start = element.selectionStart || 0;
+    const end = element.selectionEnd || 0;
+    const currentValue = element.value || '';
+    
+    // Dispatch beforeinput event
+    this.dispatchBeforeInputEvent(element, text);
+    
+    // Insert text
+    const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+    
+    // Use React-compatible value setting
+    const valueSetter = Object.getOwnPropertyDescriptor(element, 'value') || 
+                       Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
+    
+    if (valueSetter && valueSetter.set) {
+      valueSetter.set.call(element, newValue);
+    } else {
+      element.value = newValue;
+    }
+    
+    // Set cursor position
+    const newCursorPos = start + text.length;
+    element.selectionStart = newCursorPos;
+    element.selectionEnd = newCursorPos;
+    
+    // Dispatch comprehensive events
+    this.dispatchInputEvents(element);
+    
+    return true;
+  }
+
+  dispatchBeforeInputEvent(element, text) {
+    try {
+      const beforeInputEvent = new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: text
+      });
+      element.dispatchEvent(beforeInputEvent);
+    } catch (e) {
+      // Fallback for browsers that don't support InputEvent
+      console.log('beforeinput event not supported');
+    }
+  }
+
+  dispatchMinimalEvents(element) {
+    // Minimal events for when execCommand already handled the insertion
+    try {
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {
+      console.log('Could not dispatch minimal events');
+    }
+  }
+
+  dispatchInputEvents(element) {
+    // Dispatch multiple events to ensure compatibility with different frameworks
+    const events = [
+      { name: 'keydown', event: KeyboardEvent, props: { bubbles: true, key: 'Unidentified' } },
+      { name: 'keypress', event: KeyboardEvent, props: { bubbles: true, key: 'Unidentified' } },
+      { name: 'input', event: InputEvent, props: { bubbles: true, inputType: 'insertText' } },
+      { name: 'keyup', event: KeyboardEvent, props: { bubbles: true, key: 'Unidentified' } },
+      { name: 'change', event: Event, props: { bubbles: true } }
+    ];
+    
+    events.forEach(({ name, event: EventConstructor, props }) => {
+      try {
+        let evt;
+        if (EventConstructor === InputEvent) {
+          evt = new InputEvent(name, props);
+        } else if (EventConstructor === KeyboardEvent) {
+          evt = new KeyboardEvent(name, props);
+        } else {
+          evt = new Event(name, props);
+        }
+        element.dispatchEvent(evt);
+      } catch (e) {
+        // Fallback to basic Event
+        const basicEvent = new Event(name, { bubbles: true });
+        element.dispatchEvent(basicEvent);
+      }
+    });
+    
+    // Additional React-specific events (but avoid paste events that might cause duplication)
+    this.dispatchReactEvents(element);
+  }
+
+  dispatchReactEvents(element) {
+    // React often listens to these events, but avoid paste events that can cause duplication
+    
+    // Force React to update by triggering potential state changes (with shorter delay)
+    setTimeout(() => {
+      try {
+        element.focus();
+        // Briefly blur and refocus to trigger React state updates without causing duplication
+        element.blur();
+        element.focus();
+      } catch (e) {
+        console.log('Could not perform focus cycling');
+      }
+    }, 5);
+  }
+
+  findAlternativeInput(originalElement) {
+    // Look for alternative input elements nearby
+    const selectors = [
+      'input[type="text"]',
+      'textarea', 
+      '[contenteditable="true"]',
+      '[role="textbox"]',
+      '.input',
+      '[data-testid*="input"]',
+      '[data-testid*="text"]'
+    ];
+    
+    // Search in parent containers
+    let container = originalElement.parentElement;
+    while (container && container !== document.body) {
+      for (const selector of selectors) {
+        const found = container.querySelector(selector);
+        if (found && found !== originalElement && this.isTextInput(found)) {
+          return found;
+        }
+      }
+      container = container.parentElement;
+    }
+    
+    return null;
   }
 
   showRecordingOverlay() {
